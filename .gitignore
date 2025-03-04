@@ -2,9 +2,7 @@
 *.elc
 
 # Straight package manager
-/straight/build/
-/straight/repos/
-/straight/modified/
+straight/
 
 # Auto-save and backup files
 *~
