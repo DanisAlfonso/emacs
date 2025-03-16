@@ -1,16 +1,22 @@
-;; Basic UI settings
-(tooltip-mode -1)       ;; Disable tooltips
-(set-fringe-mode 10)    ;; Give some padding around text
+;; Function to load all modules from lisp directory
+(defun load-directory (dir)
+  "Load all Emacs Lisp files in directory DIR."
+  (let ((load-it (lambda (f)
+                   (load-file (concat (file-name-as-directory dir) f)))))
+    (mapc load-it (directory-files dir nil "\\.el$"))))
 
-;; Display line numbers except in some modes
-(global-display-line-numbers-mode t)
-(dolist (mode '(term-mode-hook
-                shell-mode-hook
-                eshell-mode-hook
-                vterm-mode-hook
-                treemacs-mode-hook
-                pdf-view-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+;; Load package management module first
+(load-file (expand-file-name "lisp/package-config.el" user-emacs-directory))
+
+;; Add lisp directory to load-path so require can find the modules
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
+;; Load core configuration modules
+(require 'ui-config)       ;; UI settings
+(require 'themes-config)   ;; Theme settings
+(require 'modeline-config) ;; Modeline configuration
+(require 'dired-config)    ;; Dired enhancements
+(require 'org-config)      ;; Org mode configuration
 
 ;; File handling settings
 (setq auto-save-default nil)         ;; Disable auto save
@@ -19,171 +25,6 @@
 ;; Performance optimizations
 (setq read-process-output-max (* 1024 1024)) ;; 1mb
 (setq process-adaptive-read-buffering nil)   ;; Disable adaptive buffering
-
-;; Bootstrap straight.el
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 6))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-;; Configure straight.el
-(setq straight-use-package-by-default t)
-
-;; Install and configure use-package
-(straight-use-package 'use-package)
-
-;; Always use straight.el for use-package expressions
-(setq straight-use-package-by-default t)
-
-;; Set default frame size
-(add-to-list 'default-frame-alist '(width . 120))   ;; Set width to 120 columns
-(add-to-list 'default-frame-alist '(height . 45))  ;; Set height to 45 rows
-(setq initial-frame-alist default-frame-alist)     ;; Apply same size to initial frame
-
-;; Transparent titlebar
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-
-;; Set font configuration
-;; Using Cascadia Code as the primary font with increased size (14pt)
-(set-face-attribute 'default nil :font "Cascadia Code" :height 140)
-;; If Cascadia Code is not available, try these alternatives:
-;; (set-face-attribute 'default nil :font "Menlo" :height 140)
-;; (set-face-attribute 'default nil :font "Monaco" :height 140)
-;; Note: :height 140 means 14pt (height is in 1/10pt)
-
-
-;; Install and configure themes
-(use-package timu-rouge-theme
-  :straight t
-  :defer t)
-
-(use-package doom-themes
-  :straight (:host github :repo "doomemacs/emacs-doom-themes")
-  :init
-  ;; Global settings (defaults)
-  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-        doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  :config
-  ;; Load the theme (doom-one, doom-molokai, etc); keep in mind that each
-  ;; theme may have their own settings.
-  (load-theme 'doom-one t)
-  
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  
-  ;; Corrects (and improves) org-mode's native fontification.
-  (doom-themes-org-config))
-
-;; Set up dark and light themes
-(setq dark-theme 'doom-one
-      light-theme 'doom-one-light)
-
-;; Function to toggle between light and dark themes
-(defun toggle-theme ()
-  "Toggle between light and dark themes."
-  (interactive)
-  (if (eq (car custom-enabled-themes) dark-theme)
-      (progn
-        (disable-theme dark-theme)
-        (load-theme light-theme t))
-    (progn
-      (disable-theme light-theme)
-      (load-theme dark-theme t))))
-
-;; Function to detect macOS dark mode
-(defun system-dark-mode-enabled-p ()
-  "Check if macOS dark mode is enabled."
-  (when (eq system-type 'darwin)
-    (string-equal
-     "true"
-     (string-trim
-      (shell-command-to-string
-       "defaults read -g AppleInterfaceStyle 2>/dev/null || echo light"))
-     )))
-
-;; Function to apply theme based on system appearance
-(defun apply-theme-based-on-system-appearance ()
-  "Apply appropriate theme based on macOS system appearance."
-  (interactive)
-  (if (system-dark-mode-enabled-p)
-      (unless (eq (car custom-enabled-themes) dark-theme)
-        (mapc #'disable-theme custom-enabled-themes)
-        (load-theme dark-theme t))
-    (unless (eq (car custom-enabled-themes) light-theme)
-      (mapc #'disable-theme custom-enabled-themes)
-      (load-theme light-theme t))))
-
-;; Use a single theme by default (doom-one-light)
-;; No automatic theme switching - use F6 to toggle themes manually
-
-;; Bind theme toggle to F6 (manual override)
-(global-set-key [f6] 'toggle-theme)
-
-
-;; Install and configure doom-modeline
-(use-package doom-modeline
-  :straight t
-  :init
-  (setq doom-modeline-height 25
-        doom-modeline-bar-width 3
-        doom-modeline-icon t
-        doom-modeline-major-mode-icon t
-        doom-modeline-major-mode-color-icon t
-        doom-modeline-buffer-file-name-style 'truncate-upto-project
-        doom-modeline-buffer-state-icon t
-        doom-modeline-buffer-modification-icon t
-        doom-modeline-minor-modes nil
-        doom-modeline-enable-word-count nil
-        doom-modeline-buffer-encoding nil
-        doom-modeline-indent-info nil
-        doom-modeline-checker-simple-format t
-        doom-modeline-vcs-max-length 12
-        doom-modeline-env-version t
-        doom-modeline-irc-stylize 'identity
-        doom-modeline-github-timer nil)
-  :hook (after-init . doom-modeline-mode))
-
-;; Install all-the-icons (required for doom-modeline)
-(use-package all-the-icons
-  :straight t
-  :if (display-graphic-p)
-  :defer t)
-
-;; Enhance Dired with icons and colors
-(use-package all-the-icons-dired
-  :straight t
-  :defer t
-  :hook (dired-mode . all-the-icons-dired-mode))
-
-;; Add colorful highlighting to different file types in dired
-(use-package dired-rainbow
-  :straight t
-  :defer t
-  :config
-  (dired-rainbow-define-chmod directory "#6cb2eb" "d.*")
-  (dired-rainbow-define html "#eb5286" ("css" "less" "sass" "scss" "htm" "html" "jhtm" "mht" "eml" "mustache" "xhtml"))
-  (dired-rainbow-define xml "#f2d024" ("xml" "xsd" "xsl" "xslt" "wsdl" "bib" "json" "msg" "pgn" "rss" "yaml" "yml" "rdata"))
-  (dired-rainbow-define document "#9561e2" ("docm" "doc" "docx" "odb" "odt" "pdb" "pdf" "ps" "rtf" "djvu" "epub" "odp" "ppt" "pptx"))
-  (dired-rainbow-define markdown "#ffed4a" ("org" "etx" "info" "markdown" "md" "mkd" "nfo" "pod" "rst" "tex" "textfile" "txt"))
-  (dired-rainbow-define database "#6574cd" ("xlsx" "xls" "csv" "accdb" "db" "mdb" "sqlite" "nc"))
-  (dired-rainbow-define media "#de751f" ("mp3" "mp4" "mkv" "MP3" "MP4" "avi" "mpeg" "mpg" "flv" "ogg" "mov" "mid" "midi" "wav" "aiff" "flac"))
-  (dired-rainbow-define image "#f66d9b" ("tiff" "tif" "cdr" "gif" "ico" "jpeg" "jpg" "png" "psd" "eps" "svg"))
-  (dired-rainbow-define log "#c17d11" ("log"))
-  (dired-rainbow-define shell "#f6993f" ("awk" "bash" "bat" "sed" "sh" "zsh" "vim"))
-  (dired-rainbow-define interpreted "#38c172" ("py" "ipynb" "rb" "pl" "t" "msql" "mysql" "pgsql" "sql" "r" "clj" "cljs" "scala" "js"))
-  (dired-rainbow-define compiled "#4dc0b5" ("asm" "cl" "lisp" "el" "c" "h" "c++" "h++" "hpp" "hxx" "m" "cc" "cs" "cp" "cpp" "go" "f" "for" "ftn" "f90" "f95" "f03" "f08" "s" "rs" "hi" "hs" "pyc" ".java"))
-  (dired-rainbow-define executable "#8cc4ff" ("exe" "msi" "bin" "xpi" "dll" "deb" "dmg" "iso" "jar" "class"))
-  (dired-rainbow-define compressed "#51d88a" ("7z" "zip" "bz2" "tgz" "txz" "gz" "xz" "z" "Z" "jar" "war" "ear" "rar" "sar" "xpi" "apk" "xz" "tar"))
-  (dired-rainbow-define packaged "#faad63" ("deb" "rpm" "apk" "jad" "jar" "cab" "pak" "pk3" "vdf" "vpk" "bsp"))
-  (dired-rainbow-define encrypted "#ffed4a" ("gpg" "pgp" "asc" "bfe" "enc" "signature" "sig" "p12" "pem")))
 
 ;; Install and configure which-key for modern key binding discovery
 (use-package which-key
@@ -207,44 +48,6 @@
   (which-key-mode)
   (which-key-setup-side-window-bottom))
 
-;; Customize dired appearance and behavior
-(use-package dired
-  :straight (:type built-in)
-  :defer t
-  :config
-  ;; Always delete and copy recursively
-  (setq dired-recursive-deletes 'always)
-  (setq dired-recursive-copies 'always)
-  
-  ;; Auto refresh dired when file changes
-  (setq dired-auto-revert-buffer t)
-  
-  ;; Use human-readable sizes
-  (setq dired-listing-switches "-alh")
-  
-  ;; Move files between split panes
-  (setq dired-dwim-target t)
-  
-  ;; Hide details by default for cleaner view
-  (add-hook 'dired-mode-hook 'dired-hide-details-mode))
-
-;; Add dired-subtree for expandable directories
-(use-package dired-subtree
-  :straight t
-  :defer t
-  :after dired
-  :config
-  (bind-key "<tab>" #'dired-subtree-toggle dired-mode-map)
-  (bind-key "<backtab>" #'dired-subtree-cycle dired-mode-map))
-
-;; Add dired-collapse to make nested directories more compact
-(use-package dired-collapse
-  :straight t
-  :defer t
-  :hook (dired-mode . dired-collapse-mode))
-
-;; Removed tree-sitter configuration to use default syntax highlighting
-
 ;; JavaScript and TypeScript support
 (use-package typescript-mode
   :straight t
@@ -261,20 +64,6 @@
         js2-mode-show-parse-errors t
         js2-mode-show-strict-warnings t
         js2-strict-missing-semi-warning nil))
-
-;; Add dired-open to open files with external applications
-(use-package dired-open
-  :straight t
-  :defer t
-  :after dired
-  :config
-  (setq dired-open-extensions
-        '((".pdf" . "open")
-          (".docx" . "open")
-          (".xlsx" . "open")
-          (".png" . "open")
-          (".jpg" . "open")
-          (".mp4" . "open"))))
 
 ;; Basic C/C++ Development Environment Setup
 (use-package cc-mode
@@ -295,101 +84,6 @@
                              (float-time
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
-
-;; Org mode beautification and modern styling
-(use-package org
-  :straight (:type built-in)
-  :defer t
-  :hook (org-mode . visual-line-mode)
-  :config
-  ;; Basic org settings
-  (setq org-hide-emphasis-markers t
-        org-fontify-done-headline t
-        org-fontify-quote-and-verse-blocks t
-        org-fontify-whole-heading-line t
-        org-pretty-entities t)
-  
-  ;; Set org heading sizes
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.0)
-                  (org-level-6 . 1.0)
-                  (org-level-7 . 1.0)
-                  (org-level-8 . 1.0)))
-    (set-face-attribute (car face) nil :height (cdr face)))
-  
-  ;; Improve spacing in org mode
-  (setq org-cycle-separator-lines 2
-        org-list-allow-alphabetical t
-        org-export-headline-levels 6
-        org-blank-before-new-entry '((heading . t) (plain-list-item . auto))))
-
-;; Org modern for a cleaner, more modern UI
-(use-package org-modern
-  :straight t
-  :after org
-  :hook
-  (org-mode . org-modern-mode)
-  (org-agenda-finalize . org-modern-agenda)
-  :custom
-  (org-modern-star ["◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"])
-  (org-modern-table-vertical 1)
-  (org-modern-table-horizontal 0.2)
-  (org-modern-list '((43 . "➤")
-                     (45 . "–")
-                     (42 . "•")))
-  (org-modern-todo-faces
-   '(("TODO" :inverse-video t :inherit org-todo)
-     ("PROJ" :inverse-video t :inherit +org-todo-project)
-     ("STRT" :inverse-video t :inherit +org-todo-active)
-     ("[-]"  :inverse-video t :inherit +org-todo-active)
-     ("HOLD" :inverse-video t :inherit +org-todo-onhold)
-     ("WAIT" :inverse-video t :inherit +org-todo-onhold)
-     ("[?]"  :inverse-video t :inherit +org-todo-onhold)
-     ("DONE" :inverse-video t :inherit org-done)
-     ("KILL" :inverse-video t :inherit +org-todo-cancel))))
-
-;; Variable pitch fonts in Org mode
-(use-package mixed-pitch
-  :straight t
-  :defer t
-  :hook
-  (org-mode . mixed-pitch-mode)
-  :config
-  (setq mixed-pitch-set-height t)
-  (set-face-attribute 'variable-pitch nil :height 1.1))
-
-;; Visual fill column for better text wrapping
-(use-package visual-fill-column
-  :straight t
-  :defer t
-  :hook
-  (org-mode . visual-fill-column-mode)
-  :custom
-  (visual-fill-column-width 100)
-  (visual-fill-column-center-text t))
-
-;; Org superstar for prettier headings and bullets
-(use-package org-superstar
-  :straight t
-  :after org
-  :hook (org-mode . org-superstar-mode)
-  :custom
-  (org-superstar-headline-bullets-list '("◉" "○" "✸" "✿" "✤" "✜" "◆" "▶"))
-  (org-superstar-item-bullet-alist '(("*" . "•")
-                                     ("+" . "➤")
-                                     ("-" . "–")))
-  (org-superstar-leading-bullet " "))
-
-;; Olivetti mode for distraction-free writing
-(use-package olivetti
-  :straight t
-  :defer t
-  :bind ("<f10>" . olivetti-mode)  ;; Changed from F7 to F10 to avoid conflict with transparency control
-  :custom
-  (olivetti-body-width 100))
 
 ;; Add org-mode to the list of modes that don't show line numbers
 (add-hook 'org-mode-hook (lambda () (display-line-numbers-mode 0)))
