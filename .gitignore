@@ -4,55 +4,16 @@
 # Straight package manager
 straight/
 
-# Auto-save and backup files
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-auto-save-list/
-*.swp
-
 # Undo-tree save-files
-*.~undo-tree
 
 # Local variables
-.dir-locals.el
 
-# Network Security Manager
-network-security.data
+# Auto-save files
+auto-save-list/
 
-# Projectile files
-projectile-bookmarks.eld
-
-# Transient files
-/transient/
-
-# Org-mode
-.org-id-locations
-*_archive
-
-# Various data files
-/eshell/
-/elpa/
-/.cask/
-/url/
-/var/
-/.sx/
-/tutorial/
-/server/
-/request/
-/games/
-/tramp
-/bookmarks
+# Emacs native compilation cache
+eln-cache/
 
 # MacOS specific
 .DS_Store
 .DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-
-# Keep these files
-!init.el
-!early-init.el
-!transparency.el
