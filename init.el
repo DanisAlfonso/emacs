@@ -17,6 +17,11 @@
 (require 'modeline-config) ;; Modeline configuration
 (require 'dired-config)    ;; Dired enhancements
 (require 'org-config)      ;; Org mode configuration
+(require 'navigation-config) ;; Navigation and search enhancements
+(require 'dev-tools-config) ;; Development tools
+(require 'lang-support-config) ;; Language support
+(require 'org-enhancements-config) ;; Org mode enhancements
+(require 'terminal-config) ;; Terminal integration
 
 ;; File handling settings
 (setq auto-save-default nil)         ;; Disable auto save

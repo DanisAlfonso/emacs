@@ -49,10 +49,15 @@
   (set-frame-transparency 100))
 
 ;; Key bindings for transparency control
-;; Using C-c t prefix for transparency-related commands
-(global-set-key (kbd "C-c t +") 'decrease-transparency) ;; More opaque
-(global-set-key (kbd "C-c t -") 'increase-transparency) ;; More transparent
-(global-set-key (kbd "C-c t r") 'reset-transparency)    ;; Reset to opaque
+;; Define the prefix key map for transparency-related commands
+(defvar transparency-map (make-sparse-keymap)
+  "Keymap for transparency-related commands.")
+(global-set-key (kbd "C-c t") transparency-map)
+
+;; Now bind keys in the transparency keymap
+(define-key transparency-map (kbd "+") 'decrease-transparency) ;; More opaque
+(define-key transparency-map (kbd "-") 'increase-transparency) ;; More transparent
+(define-key transparency-map (kbd "r") 'reset-transparency)    ;; Reset to opaque
 
 ;; Alternative key bindings using function keys
 (global-set-key (kbd "<f7>") 'increase-transparency)  ;; F7 to increase transparency

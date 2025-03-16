@@ -1,5 +1,11 @@
 ;; early-init.el --- Early Init File for faster startup
 
+;; Enable native compilation if available (Emacs 28+)
+(when (and (fboundp 'native-comp-available-p)
+           (native-comp-available-p))
+  (setq native-comp-async-report-warnings-errors nil)
+  (setq native-comp-deferred-compilation t))
+
 ;; Increase the garbage collection threshold to allow more memory during startup
 ;; This significantly reduces the number of garbage collections during initialization
 (setq gc-cons-threshold 100000000) ;; 100MB (default is 800KB)
